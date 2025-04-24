@@ -27557,7 +27557,7 @@ module.exports = parseParams
 var __webpack_exports__ = {};
 const core = __nccwpck_require__(8450);
 
-function incrementMainVersion(baseVersion, strategy) {
+function incrementMainVersion(baseVersion, strategy, versionPrefix) {
     if (strategy === undefined || strategy.trim() === '') {
         strategy = 'patch';
     }
@@ -27571,11 +27571,11 @@ function incrementMainVersion(baseVersion, strategy) {
 
     switch (strategy) {
         case 'patch':
-            return `${major}.${minor}.${Number(patch) + 1}`;
+            return `${versionPrefix}${major}.${minor}.${Number(patch) + 1}`;
         case 'minor':
-            return `${major}.${Number(minor) + 1}.0`;
+            return `${versionPrefix}${major}.${Number(minor) + 1}.0`;
         case 'major':
-            return `${Number(major) + 1}.0.0`;
+            return `${versionPrefix}${Number(major) + 1}.0.0`;
         default:
             throw new Error(`Unknown version strategy type: ${strategy}`);
     }
@@ -27596,22 +27596,25 @@ function parseMainVersion(versionString) {
     };
 }
 
-function incrementBranchVersion(baseVersion, branchName) {
+function incrementBranchVersion(baseVersion, branchName, versionPrefix) {
     const branchId = branchName.replace('/[^a-z0-9]/gi', '-').toLowerCase();
 
-    let preVersion = baseVersion.split('.').pop();
-    if (isNaN(Number(preVersion)))
+    const preVersion = baseVersion.split('.').pop();
+    const regex = /^([a-zA-Z]*)(\d+)$/;
+    const match = preVersion.match(regex);
+
+    if (!match || isNaN(Number(preVersion)))
         throw new Error('Old version has invalid format: ' + baseVersion);
 
-    return `${branchId}.${Number(preVersion) + 1}`;
+    return `${branchId}.${versionPrefix}${Number(preVersion) + 1}`;
 }
 
-function updateVersion(baseVersion, branchName, strategy) {
+function updateVersion(baseVersion, branchName, strategy, versionPrefix) {
     if (['main', 'master'].includes(branchName)) {
-        return incrementMainVersion(baseVersion, strategy);
+        return incrementMainVersion(baseVersion, strategy, versionPrefix);
     }
 
-    return `${incrementBranchVersion(baseVersion, branchName)}`;
+    return `${incrementBranchVersion(baseVersion, branchName, versionPrefix)}`;
 }
 
 try {
@@ -27620,9 +27623,9 @@ try {
     const strategy = core.getInput('version_strategy');
     const versionPrefix = core.getInput('version_prefix');
 
-    const newVersion = updateVersion(baseVersion, branchName, strategy);
+    const newVersion = updateVersion(baseVersion, branchName, strategy, versionPrefix);
 
-    core.setOutput('new_version', versionPrefix + newVersion);
+    core.setOutput('new_version', newVersion);
 } catch (error) {
     core.setFailed(error.message);
 }
