@@ -12,7 +12,7 @@ inputs:
     description: 'Version strategy (major, minor, patch). Default is patch.'
     required: false
   version_prefix:
-    description: 'Version prefix. Default is v. Example: v1.0.0'
+    description: 'Version prefix. Default is v'
     required: false
     default: v
 

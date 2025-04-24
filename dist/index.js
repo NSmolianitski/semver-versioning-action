@@ -27571,11 +27571,11 @@ function incrementMainVersion(baseVersion, strategy) {
 
     switch (strategy) {
         case 'patch':
-            return `${prefix}${major}.${minor}.${Number(patch) + 1}`;
+            return `${major}.${minor}.${Number(patch) + 1}`;
         case 'minor':
-            return `${prefix}${major}.${Number(minor) + 1}.0`;
+            return `${major}.${Number(minor) + 1}.0`;
         case 'major':
-            return `${prefix}${Number(major) + 1}.0.0`;
+            return `${Number(major) + 1}.0.0`;
         default:
             throw new Error(`Unknown version strategy type: ${strategy}`);
     }
@@ -27606,7 +27606,7 @@ function incrementBranchVersion(baseVersion, branchName) {
     return `${branchId}.${Number(preVersion) + 1}`;
 }
 
-function calculateVersion(baseVersion, branchName, strategy) {
+function updateVersion(baseVersion, branchName, strategy) {
     if (['main', 'master'].includes(branchName)) {
         return incrementMainVersion(baseVersion, strategy);
     }
@@ -27620,7 +27620,7 @@ try {
     const strategy = core.getInput('version_strategy');
     const versionPrefix = core.getInput('version_prefix');
 
-    const newVersion = calculateVersion(baseVersion, branchName, strategy);
+    const newVersion = updateVersion(baseVersion, branchName, strategy);
 
     core.setOutput('new_version', versionPrefix + newVersion);
 } catch (error) {
