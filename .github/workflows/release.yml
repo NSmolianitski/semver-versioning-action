@@ -1,0 +1,41 @@
+﻿name: "Versioning"
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  versioning:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bump version
+        id: versioning
+        uses: ./
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Generate release notes
+        id: generate_notes
+        shell: bash
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || git rev-list --max-parents=0 HEAD)
+          NOTES=$(git log --pretty=format:"- %s" $LAST_TAG..HEAD)
+          echo "notes=${NOTES}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.versioning.outputs.new_version }}
+          release_name: Release ${{ steps.versioning.outputs.new_version }}
+          body: ${{ steps.generate_notes.outputs.notes }}
+          draft: false
+          prerelease: ${{ contains(steps.versioning.outputs.new_version, '-') }}

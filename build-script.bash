@@ -1,0 +1,1 @@
+﻿ncc build scripts/index.js -o dist

@@ -1,0 +1,25 @@
+﻿name: 'Version Bumper'
+description: 'Action for version bumping'
+
+inputs:
+  branch_name:
+    description: 'Current branch name'
+    required: true
+  base_version:
+    description: 'Base version to increment'
+    required: false
+  version_strategy:
+    description: 'Version strategy (major, minor, patch). Default is patch.'
+    required: false
+  version_prefix:
+    description: 'Version prefix. Default is v. Example: v1.0.0'
+    required: false
+    default: v
+
+outputs:
+  new_version:
+    description: 'New version'
+
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
