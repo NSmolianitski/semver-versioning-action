@@ -17,7 +17,7 @@ jobs:
 
       - name: Bump version
         id: versioning
-        uses: nsmolianitski/semver-action@v1
+        uses: nsmolianitski/semver-action@v1.0.0
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           
@@ -30,7 +30,7 @@ jobs:
           echo "notes=${NOTES}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1.0.1
+        uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
