@@ -30,7 +30,7 @@ jobs:
           echo "notes=${NOTES}" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        uses: actions/create-release@v1.0.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
