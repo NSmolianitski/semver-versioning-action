@@ -27505,7 +27505,7 @@ function parseSemVersion(versionString) {
         patch: parseInt(match[4], 10),
     };
 }
-function incrementMainVersion(latestMainVersion, strategy) {
+function incrementMainVersion(latestMainVersion, strategy, versionPrefix) {
     const { prefix, major, minor, patch } = parseSemVersion(latestMainVersion);
     let newVersion;
     switch (strategy) {
@@ -27522,37 +27522,39 @@ function incrementMainVersion(latestMainVersion, strategy) {
             throw new Error(`Unknown version strategy type: ${strategy}`);
     }
     return {
-        newVersion: `${prefix}${newVersion}`,
-        newVersionRaw: newVersion,
-        prefix: prefix
-    };
-}
-function incrementBranchVersion(latestMainVersion, branchName, versionPrefix) {
-    const formattedBranchName = branchName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
-    let branchPatchVersion = latestMainVersion.split('.').pop() || '0';
-    const match = branchPatchVersion.match(/^-.*-([^.-]+)\.(\d+)$/);
-    if (!match || isNaN(Number(branchPatchVersion))) {
-        branchPatchVersion = '0';
-    }
-    const newVersionRaw = Number(branchPatchVersion) + 1;
-    const newVersion = `${formattedBranchName}.${newVersionRaw}`;
-    return {
         newVersion: `${versionPrefix}${newVersion}`,
         newVersionRaw: newVersion,
         prefix: versionPrefix
     };
 }
-function updateVersion(inputs) {
-    const { latestMainVersion, branchName, strategy, versionPrefix } = inputs;
-    if (['master', 'main'].includes(branchName)) {
-        return incrementMainVersion(latestMainVersion, strategy);
+function incrementBranchVersion(latestMainVersion, latestBranchVersion, branchName, versionPrefix) {
+    const formattedBranchName = branchName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    let branchPatchVersion = latestBranchVersion.split('.').pop() || '0';
+    const match = latestBranchVersion.match(/^[^.]+\.[^.]+\.[^.]+-.*\.(\d+)$/);
+    if (isNaN(Number(branchPatchVersion)) || !match) {
+        branchPatchVersion = '0';
     }
-    return incrementBranchVersion(latestMainVersion, branchName, versionPrefix);
+    const fullPrefix = `${versionPrefix}${latestMainVersion}-${formattedBranchName}`;
+    const newVersionRaw = Number(branchPatchVersion) + 1;
+    const newVersion = `${fullPrefix}.${newVersionRaw}`;
+    return {
+        newVersion: newVersion,
+        newVersionRaw: `${newVersionRaw}`,
+        prefix: fullPrefix
+    };
+}
+function updateVersion(inputs) {
+    const { latestMainVersion, latestBranchVersion, branchName, strategy, versionPrefix } = inputs;
+    if (['master', 'main'].includes(branchName)) {
+        return incrementMainVersion(latestMainVersion, strategy, versionPrefix);
+    }
+    return incrementBranchVersion(latestMainVersion, latestBranchVersion, branchName, versionPrefix);
 }
 function run() {
     try {
         let inputs = {
-            latestMainVersion: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('base_version'),
+            latestMainVersion: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('latest_main_version'),
+            latestBranchVersion: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('latest_branch_version'),
             branchName: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('branch_name'),
             strategy: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('version_strategy'),
             versionPrefix: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput('version_prefix')
@@ -27561,6 +27563,7 @@ function run() {
         const newVersion = updateVersion(validatedInputs);
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput('new_version', newVersion.newVersion);
         _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput('new_version_raw', newVersion.newVersionRaw);
+        _actions_core__WEBPACK_IMPORTED_MODULE_0__.setOutput('prefix', newVersion.prefix);
     }
     catch (error) {
         if (error instanceof Error) {
