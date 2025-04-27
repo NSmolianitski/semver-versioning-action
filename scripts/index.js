@@ -1,35 +1,43 @@
-﻿const core = require('@actions/core');
+﻿import * as core from '@actions/core';
 
-function incrementMainVersion(baseVersion, strategy, versionPrefix) {
-    if (strategy === undefined || strategy.trim() === '') {
-        strategy = 'patch';
-    }
-
-    if (baseVersion === undefined || baseVersion.trim() === '') {
-        baseVersion = '0.0.0';
-    }
-
-    const version = parseMainVersion(baseVersion);
-    const {prefix, major, minor, patch} = version;
-
-    switch (strategy) {
-        case 'patch':
-            return `${versionPrefix}${major}.${minor}.${Number(patch) + 1}`;
-        case 'minor':
-            return `${versionPrefix}${major}.${Number(minor) + 1}.0`;
-        case 'major':
-            return `${versionPrefix}${Number(major) + 1}.0.0`;
-        default:
-            throw new Error(`Unknown version strategy type: ${strategy}`);
-    }
+export class Inputs {
+    latestMainVersion;
+    latestBranchVersion;
+    branchName;
+    strategy;
+    versionPrefix;
 }
 
-function parseMainVersion(versionString) {
+export class Outputs {
+    newVersion;
+    newVersionRaw;
+}
+
+export function isStringEmpty(str) {
+    return !str || !str.trim().length;
+}
+
+export function validateInputs(inputs) {
+    if (isStringEmpty(inputs.strategy)) {
+        inputs.strategy = 'patch';
+    }
+
+    if (isStringEmpty(inputs.latestMainVersion)) {
+        inputs.latestMainVersion = '0.0.0';
+    }
+
+    if (isStringEmpty(inputs.branchName)) {
+        inputs.branchName = 'master';
+    }
+
+    return inputs;
+}
+
+export function parseSemVersion(versionString) {
     const regex = /^([a-zA-Z]*)(\d+)\.(\d+)\.(\d+)$/;
     const match = versionString.match(regex);
 
-    if (!match)
-        throw new Error("Invalid version format");
+    if (!match) throw new Error(`Invalid version format: ${versionString}`);
 
     return {
         prefix: match[1] || '',
@@ -39,36 +47,76 @@ function parseMainVersion(versionString) {
     };
 }
 
-function incrementBranchVersion(baseVersion, branchName, versionPrefix) {
-    const branchId = branchName.replace('/[^a-z0-9]/gi', '-').toLowerCase();
+export function incrementMainVersion(latestMainVersion, strategy) {
+    const {prefix, major, minor, patch} = parseSemVersion(latestMainVersion);
 
-    const preVersion = baseVersion.split('.').pop();
-    const regex = /^([a-zA-Z]*)(\d+)$/;
-    const match = preVersion.match(regex);
-
-    if (!match || isNaN(Number(preVersion)))
-        throw new Error('Old version has invalid format: ' + baseVersion);
-
-    return `${branchId}.${versionPrefix}${Number(preVersion) + 1}`;
-}
-
-function updateVersion(baseVersion, branchName, strategy, versionPrefix) {
-    if (['main', 'master'].includes(branchName)) {
-        return incrementMainVersion(baseVersion, strategy, versionPrefix);
+    let newVersion;
+    switch (strategy) {
+        case 'patch':
+            newVersion = `${major}.${minor}.${Number(patch) + 1}`;
+            break;
+        case 'minor':
+            newVersion = `${major}.${Number(minor) + 1}.0`;
+            break;
+        case 'major':
+            newVersion = `${Number(major) + 1}.0.0`;
+            break;
+        default:
+            throw new Error(`Unknown version strategy type: ${strategy}`);
     }
 
-    return `${incrementBranchVersion(baseVersion, branchName, versionPrefix)}`;
+    return {
+        newVersion: `${prefix}${newVersion}`,
+        newVersionRaw: newVersion,
+        prefix: prefix
+    };
 }
 
-try {
-    const baseVersion = core.getInput('base_version');
-    const branchName = core.getInput('branch_name');
-    const strategy = core.getInput('version_strategy');
-    const versionPrefix = core.getInput('version_prefix');
+export function incrementBranchVersion(latestMainVersion, branchName, versionPrefix) {
+    const formattedBranchName = branchName.replace('/[^a-z0-9]/gi', '-').toLowerCase();
 
-    const newVersion = updateVersion(baseVersion, branchName, strategy, versionPrefix);
+    let branchPatchVersion = latestMainVersion.split('.').pop();
+    const match = branchPatchVersion.match(/^-.*-([^.-]+)\.(\d+)$/);
 
-    core.setOutput('new_version', newVersion);
-} catch (error) {
-    core.setFailed(error.message);
+    if (!match || isNaN(Number(branchPatchVersion)))
+        branchPatchVersion = '0';
+
+    const newVersion = `${formattedBranchName}.${Number(branchPatchVersion) + 1}`;
+
+    return {
+        newVersion: `${versionPrefix}${newVersion}`,
+        newVersionRaw: newVersion,
+        prefix: versionPrefix
+    };
 }
+
+export function updateVersion(inputs) {
+    const {latestMainVersion, branchName, strategy, versionPrefix} = inputs;
+
+    if (['master', 'main'].includes(branchName)) {
+        return incrementMainVersion(latestMainVersion, strategy, versionPrefix);
+    }
+
+    return `${incrementBranchVersion(latestMainVersion, branchName, versionPrefix)}`;
+}
+
+export function run() {
+    try {
+        let inputs = {
+            baseVersion: core.getInput('base_version'),
+            branchName: core.getInput('branch_name'),
+            strategy: core.getInput('version_strategy'),
+            versionPrefix: core.getInput('version_prefix')
+        };
+        inputs = validateInputs(inputs);
+
+        const newVersion = updateVersion(inputs);
+
+        core.setOutput('new_version', newVersion);
+        core.setOutput('new_version_raw', newVersion);
+    } catch (error) {
+        core.setFailed(error.message);
+    }
+}
+
+// run();
