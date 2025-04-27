@@ -5,12 +5,16 @@ inputs:
   branch_name:
     description: 'Current branch name'
     required: true
-  base_version:
-    description: 'Base version to increment'
+  latest_main_version:
+    description: 'Main version to increment'
+    required: false
+  latest_branch_version:
+    description: 'Branch version to increment'
     required: false
   version_strategy:
     description: 'Version strategy (major, minor, patch). Default is patch.'
     required: false
+    default: patch
   version_prefix:
     description: 'Version prefix. Default is v'
     required: false
@@ -19,7 +23,11 @@ inputs:
 outputs:
   new_version:
     description: 'New version'
+  new_version_raw:
+    description: 'New version without prefix'
+  prefix:
+    description: 'Version prefix'
 
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
