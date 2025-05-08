@@ -40,6 +40,12 @@ outputs:
     description: 'New version without prefix'
   prefix:
     description: 'Version prefix'
+  major:
+    description: 'New major version with prefix'
+  minor:
+    description: 'New minor version with prefix'
+  patch:
+    description: 'Same as new_version'
 
 runs:
   using: 'node20'

@@ -114,8 +114,8 @@ export function incrementMainVersion(
     newVersionRaw: newVersion,
     prefix: versionPrefix,
     major: `${additionalName}${versionPrefix}${major}`,
-    minor: `${additionalName}${versionPrefix}${minor}`,
-    patch: `${additionalName}${versionPrefix}${patch}`,
+    minor: `${additionalName}${versionPrefix}${major}.${minor}`,
+    patch: `${newVersion}`,
   };
 }
 
@@ -188,6 +188,9 @@ export function run(): void {
     core.setOutput('new_version', newVersionOutputs.newVersion);
     core.setOutput('new_version_raw', newVersionOutputs.newVersionRaw);
     core.setOutput('prefix', newVersionOutputs.prefix);
+    core.setOutput('major', newVersionOutputs.major);
+    core.setOutput('minor', newVersionOutputs.minor);
+    core.setOutput('patch', newVersionOutputs.patch);
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
