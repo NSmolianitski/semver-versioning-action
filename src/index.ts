@@ -108,16 +108,16 @@ export function incrementMainVersion(
       throw new Error(`Unknown version strategy type: ${strategy}`);
   }
 
-  const newVersion = `${major}.${minor}.${patch}`;
+  const newVersionRaw = `${major}.${minor}.${patch}`;
 
   return {
-    newVersion: `${additionalName}${versionPrefix}${newVersion}`,
-    newVersionRaw: newVersion,
+    newVersion: `${additionalName}${versionPrefix}${newVersionRaw}`,
+    newVersionRaw: newVersionRaw,
     prefix: versionPrefix,
     isNonMainVersion: false,
     major: `${additionalName}${versionPrefix}${major}`,
     minor: `${additionalName}${versionPrefix}${major}.${minor}`,
-    patch: `${newVersion}`,
+    patch: `${additionalName}${versionPrefix}${newVersionRaw}`,
   };
 }
 

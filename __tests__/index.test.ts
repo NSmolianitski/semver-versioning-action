@@ -30,6 +30,8 @@ describe('validateInputs', () => {
     expect(result.latestBranchVersion).toBe('');
     expect(result.branchName).toBe('master');
     expect(result.versionPrefix).toBe('');
+    expect(result.additionalName).toBe('');
+    expect(result.mainlineVersioningBranches).toBe('main,master');
   });
 
   it('should preserve valid inputs', () => {
@@ -37,13 +39,17 @@ describe('validateInputs', () => {
       strategy: 'minor',
       latestMainVersion: '1.2.3',
       branchName: 'feature-123',
-      versionPrefix: 'v'
+      versionPrefix: 'v',
+      additionalName: 'server',
+      mainlineVersioningBranches: 'main,master'
     };
     const result = validateInputs(inputs);
     expect(result.strategy).toBe('minor');
     expect(result.latestMainVersion).toBe('1.2.3');
     expect(result.branchName).toBe('feature-123');
     expect(result.versionPrefix).toBe('v');
+    expect(result.additionalName).toBe('server.');
+    expect(result.mainlineVersioningBranches).toBe('main,master');
   });
 });
 
@@ -60,6 +66,16 @@ describe('parseSemVersion', () => {
 
   it('should parse version with prefix', () => {
     const result = parseSemVersion('server.', 'server.1.2.3');
+    expect(result).toEqual({
+      prefix: '',
+      major: 1,
+      minor: 2,
+      patch: 3
+    });
+  });
+
+  it('should parse version with prefix', () => {
+    const result = parseSemVersion('client-package.', 'client-package.1.2.3');
     expect(result).toEqual({
       prefix: '',
       major: 1,
@@ -88,6 +104,16 @@ describe('parseSemVersion', () => {
     });
   });
 
+  it('should parse version with prefix', () => {
+    const result = parseSemVersion('client-package.', 'client-package.v1.2.3');
+    expect(result).toEqual({
+      prefix: 'v',
+      major: 1,
+      minor: 2,
+      patch: 3
+    });
+  });
+  
   it('should throw error for invalid format', () => {
     expect(() => parseSemVersion('', 'invalid')).toThrow();
     expect(() => parseSemVersion('', '1.2')).toThrow();
@@ -237,6 +263,12 @@ describe('updateVersion', () => {
     };
     const result = updateVersion(inputs);
     expect(result.newVersion).toBe('v1.3.0');
+    expect(result.newVersionRaw).toBe('1.3.0');
+    expect(result.prefix).toBe('v');
+    expect(result.isNonMainVersion).toBe(false);
+    expect(result.major).toBe('v1');
+    expect(result.minor).toBe('v1.3');
+    expect(result.patch).toBe('v1.3.0');
   });
 
   it('should update branch version for feature branch', () => {
