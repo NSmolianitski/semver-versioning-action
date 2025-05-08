@@ -40,6 +40,8 @@ outputs:
     description: 'New version without prefix'
   prefix:
     description: 'Version prefix'
+  non_main_branch:
+    description: 'Non main branch updated. True if non main/master/mainline branch'
   major:
     description: 'New major version with prefix'
   minor:

@@ -21,6 +21,7 @@ export class Outputs {
   newVersion!: string;
   newVersionRaw!: string;
   prefix!: string;
+  isNonMainVersion!: boolean;
   major!: string;
   minor!: string;
   patch!: string;
@@ -113,6 +114,7 @@ export function incrementMainVersion(
     newVersion: `${additionalName}${versionPrefix}${newVersion}`,
     newVersionRaw: newVersion,
     prefix: versionPrefix,
+    isNonMainVersion: false,
     major: `${additionalName}${versionPrefix}${major}`,
     minor: `${additionalName}${versionPrefix}${major}.${minor}`,
     patch: `${newVersion}`,
@@ -146,6 +148,7 @@ export function incrementBranchVersion(
     newVersion: newVersion,
     newVersionRaw: `${newVersionRaw}`,
     prefix: fullPrefix,
+    isNonMainVersion: true,
     major: 'branch-version-increased',
     minor: 'branch-version-increased',
     patch: 'branch-version-increased',
@@ -188,6 +191,7 @@ export function run(): void {
     core.setOutput('new_version', newVersionOutputs.newVersion);
     core.setOutput('new_version_raw', newVersionOutputs.newVersionRaw);
     core.setOutput('prefix', newVersionOutputs.prefix);
+    core.setOutput('non_main_branch', newVersionOutputs.isNonMainVersion);
     core.setOutput('major', newVersionOutputs.major);
     core.setOutput('minor', newVersionOutputs.minor);
     core.setOutput('patch', newVersionOutputs.patch);
