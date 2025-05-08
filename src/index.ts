@@ -21,6 +21,9 @@ export class Outputs {
   newVersion!: string;
   newVersionRaw!: string;
   prefix!: string;
+  major!: string;
+  minor!: string;
+  patch!: string;
 }
 
 export function isStringEmpty(str: string | undefined | null): boolean {
@@ -85,27 +88,34 @@ export function incrementMainVersion(
   versionPrefix: string,
   additionalName: string
 ): Outputs {
-  const {prefix, major, minor, patch} = parseSemVersion(additionalName, latestMainVersion);
+  let {prefix, major, minor, patch} = parseSemVersion(additionalName, latestMainVersion);
 
-  let newVersion: string;
   switch (strategy) {
     case 'patch':
-      newVersion = `${major}.${minor}.${Number(patch) + 1}`;
+      ++patch;
       break;
     case 'minor':
-      newVersion = `${major}.${Number(minor) + 1}.0`;
+      ++minor;
+      patch = 0;
       break;
     case 'major':
-      newVersion = `${Number(major) + 1}.0.0`;
+      ++major;
+      minor = 0;
+      patch = 0;
       break;
     default:
       throw new Error(`Unknown version strategy type: ${strategy}`);
   }
 
+  const newVersion = `${major}.${minor}.${patch}`;
+
   return {
     newVersion: `${additionalName}${versionPrefix}${newVersion}`,
     newVersionRaw: newVersion,
-    prefix: versionPrefix
+    prefix: versionPrefix,
+    major: `${additionalName}${versionPrefix}${major}`,
+    minor: `${additionalName}${versionPrefix}${minor}`,
+    patch: `${additionalName}${versionPrefix}${patch}`,
   };
 }
 
@@ -135,7 +145,10 @@ export function incrementBranchVersion(
   return {
     newVersion: newVersion,
     newVersionRaw: `${newVersionRaw}`,
-    prefix: fullPrefix
+    prefix: fullPrefix,
+    major: 'branch-version-increased',
+    minor: 'branch-version-increased',
+    patch: 'branch-version-increased',
   };
 }
 
@@ -170,11 +183,11 @@ export function run(): void {
     };
 
     const validatedInputs = validateInputs(inputs);
-    const newVersion = updateVersion(validatedInputs);
+    const newVersionOutputs = updateVersion(validatedInputs);
 
-    core.setOutput('new_version', newVersion.newVersion);
-    core.setOutput('new_version_raw', newVersion.newVersionRaw);
-    core.setOutput('prefix', newVersion.prefix);
+    core.setOutput('new_version', newVersionOutputs.newVersion);
+    core.setOutput('new_version_raw', newVersionOutputs.newVersionRaw);
+    core.setOutput('prefix', newVersionOutputs.prefix);
   } catch (error) {
     if (error instanceof Error) {
       core.setFailed(error.message);
