@@ -15,10 +15,23 @@ inputs:
     description: 'Version strategy (major, minor, patch). Default is patch.'
     required: false
     default: patch
+    type: choice
+    options:
+    - major
+    - minor
+    - patch
   version_prefix:
     description: 'Version prefix. Default is v'
     required: false
     default: v
+  additional_name:
+    description: 'Affects the search for tags with this name and is added to the resulting tag. Use if you have multiple services versioned with this action'
+    required: false
+    default: ''
+  mainline_versioning_branches:
+    description: 'Mainline versioning branches'
+    required: false
+    default: 'main,master'
 
 outputs:
   new_version:

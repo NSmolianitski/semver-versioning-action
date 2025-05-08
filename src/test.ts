@@ -2,11 +2,13 @@ import {updateVersion, validateInputs} from "./index.js";
 
 try {
   let initInputs = {
-    latestMainVersion: '3.2.1',
-    latestBranchVersion: '',
+    latestMainVersion: undefined,
+    latestBranchVersion: undefined,
     branchName: 'main',
-    strategy: 'minor',
-    versionPrefix: 'v'
+    strategy: '',
+    versionPrefix: '',
+    additionalName: '',
+    mainlineVersioningBranches: ''
   };
   const inputs = validateInputs(initInputs);
   console.log(inputs);

@@ -13,6 +13,8 @@ export class Inputs {
   branchName!: string;
   strategy!: string;
   versionPrefix!: string;
+  additionalName!: string;
+  mainlineVersioningBranches!: string;
 }
 
 export class Outputs {
@@ -48,15 +50,26 @@ export function validateInputs(inputs: Partial<Inputs>): Inputs {
     validated.versionPrefix = '';
   }
 
+  if (isStringEmpty(validated.additionalName)) {
+    validated.additionalName = '';
+  } else {
+    validated.additionalName += '.';
+  }
+
+  if (isStringEmpty(validated.mainlineVersioningBranches)) {
+    validated.mainlineVersioningBranches = 'main,master';
+  }
+
   return validated;
 }
 
-export function parseSemVersion(versionString: string): SemVersion {
+export function parseSemVersion(additionalName: string, versionString: string): SemVersion {
+  const rawVersionString = versionString.replace(additionalName, '');
   const regex = /^([a-zA-Z]*)(\d+)\.(\d+)\.(\d+)$/;
-  const match = versionString.match(regex);
+  const match = rawVersionString.match(regex);
 
   if (!match)
-    throw new Error(`Invalid version format: ${versionString}`);
+    throw new Error(`Invalid version format: ${rawVersionString}`);
 
   return {
     prefix: match[1] || '',
@@ -66,8 +79,13 @@ export function parseSemVersion(versionString: string): SemVersion {
   };
 }
 
-export function incrementMainVersion(latestMainVersion: string, strategy: string, versionPrefix: string): Outputs {
-  const {prefix, major, minor, patch} = parseSemVersion(latestMainVersion);
+export function incrementMainVersion(
+  latestMainVersion: string,
+  strategy: string,
+  versionPrefix: string,
+  additionalName: string
+): Outputs {
+  const {prefix, major, minor, patch} = parseSemVersion(additionalName, latestMainVersion);
 
   let newVersion: string;
   switch (strategy) {
@@ -85,14 +103,23 @@ export function incrementMainVersion(latestMainVersion: string, strategy: string
   }
 
   return {
-    newVersion: `${versionPrefix}${newVersion}`,
+    newVersion: `${additionalName}${versionPrefix}${newVersion}`,
     newVersionRaw: newVersion,
     prefix: versionPrefix
   };
 }
 
-export function incrementBranchVersion(latestMainVersion: string, latestBranchVersion: string, branchName: string, versionPrefix: string): Outputs {
-  const formattedBranchName = branchName.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+export function incrementBranchVersion(
+  latestMainVersion: string,
+  latestBranchVersion: string,
+  branchName: string,
+  versionPrefix: string,
+  additionalName: string
+): Outputs {
+  const formattedBranchName = branchName
+    .replace(additionalName, '')
+    .replace(/[^a-z0-9]/gi, '-')
+    .toLowerCase();
 
   let branchPatchVersion = latestBranchVersion.split('.').pop() || '0';
   const match = latestBranchVersion.match(/^[^.]+\.[^.]+\.[^.]+-.*\.(\d+)$/);
@@ -103,7 +130,7 @@ export function incrementBranchVersion(latestMainVersion: string, latestBranchVe
 
   const fullPrefix = `${versionPrefix}${latestMainVersion}-${formattedBranchName}`;
   const newVersionRaw = Number(branchPatchVersion) + 1;
-  const newVersion = `${fullPrefix}.${newVersionRaw}`;
+  const newVersion = `${additionalName}${fullPrefix}.${newVersionRaw}`;
 
   return {
     newVersion: newVersion,
@@ -118,14 +145,16 @@ export function updateVersion(inputs: Inputs): Outputs {
     latestBranchVersion,
     branchName,
     strategy,
-    versionPrefix
+    versionPrefix,
+    additionalName,
+    mainlineVersioningBranches
   } = inputs;
 
-  if (['master', 'main'].includes(branchName)) {
-    return incrementMainVersion(latestMainVersion, strategy, versionPrefix);
+  if (mainlineVersioningBranches.split(',').includes(branchName)) {
+    return incrementMainVersion(latestMainVersion, strategy, versionPrefix, additionalName);
   }
 
-  return incrementBranchVersion(latestMainVersion, latestBranchVersion, branchName, versionPrefix);
+  return incrementBranchVersion(latestMainVersion, latestBranchVersion, branchName, versionPrefix, additionalName);
 }
 
 export function run(): void {
@@ -135,7 +164,9 @@ export function run(): void {
       latestBranchVersion: core.getInput('latest_branch_version'),
       branchName: core.getInput('branch_name'),
       strategy: core.getInput('version_strategy'),
-      versionPrefix: core.getInput('version_prefix')
+      versionPrefix: core.getInput('version_prefix'),
+      additionalName: core.getInput('additional_name'),
+      mainlineVersioningBranches: core.getInput('mainline_versioning_branches')
     };
 
     const validatedInputs = validateInputs(inputs);

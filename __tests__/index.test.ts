@@ -49,7 +49,7 @@ describe('validateInputs', () => {
 
 describe('parseSemVersion', () => {
   it('should parse version without prefix', () => {
-    const result = parseSemVersion('1.2.3');
+    const result = parseSemVersion('', '1.2.3');
     expect(result).toEqual({
       prefix: '',
       major: 1,
@@ -59,7 +59,27 @@ describe('parseSemVersion', () => {
   });
 
   it('should parse version with prefix', () => {
-    const result = parseSemVersion('v1.2.3');
+    const result = parseSemVersion('server.', 'server.1.2.3');
+    expect(result).toEqual({
+      prefix: '',
+      major: 1,
+      minor: 2,
+      patch: 3
+    });
+  });
+
+  it('should parse version with prefix', () => {
+    const result = parseSemVersion('', 'v1.2.3');
+    expect(result).toEqual({
+      prefix: 'v',
+      major: 1,
+      minor: 2,
+      patch: 3
+    });
+  });
+
+  it('should parse version with prefix', () => {
+    const result = parseSemVersion('server.', 'server.v1.2.3');
     expect(result).toEqual({
       prefix: 'v',
       major: 1,
@@ -69,46 +89,137 @@ describe('parseSemVersion', () => {
   });
 
   it('should throw error for invalid format', () => {
-    expect(() => parseSemVersion('invalid')).toThrow();
-    expect(() => parseSemVersion('1.2')).toThrow();
+    expect(() => parseSemVersion('', 'invalid')).toThrow();
+    expect(() => parseSemVersion('', '1.2')).toThrow();
   });
 });
 
 describe('incrementMainVersion', () => {
   const testCases = [
-    {strategy: 'patch', input: '1.2.3', versionPrefix: '', expected: '1.2.4'},
-    {strategy: 'minor', input: '1.2.3', versionPrefix: '', expected: '1.3.0'},
-    {strategy: 'major', input: '1.2.3', versionPrefix: '', expected: '2.0.0'},
-    {strategy: 'patch', input: 'v1.2.3', versionPrefix: '', expected: '1.2.4'},
-    {strategy: 'minor', input: 'v1.2.3', versionPrefix: '', expected: '1.3.0'},
-    {strategy: 'major', input: 'v1.2.3', versionPrefix: 'v', expected: 'v2.0.0'}
+    {
+      strategy: 'patch',
+      input: '1.2.3',
+      versionPrefix: '',
+      additionalName: '',
+      expectedNewVersion: '1.2.4',
+      expectedRawVersion: '1.2.4'
+    },
+    {
+      strategy: 'minor',
+      input: '1.2.3',
+      versionPrefix: '',
+      additionalName: '',
+      expectedNewVersion: '1.3.0',
+      expectedRawVersion: '1.3.0'
+    },
+    {
+      strategy: 'major',
+      input: '1.2.3',
+      versionPrefix: '',
+      additionalName: '',
+      expectedNewVersion: '2.0.0',
+      expectedRawVersion: '2.0.0'
+    },
+    {
+      strategy: 'patch',
+      input: 'v1.2.3',
+      versionPrefix: '',
+      additionalName: '',
+      expectedNewVersion: '1.2.4',
+      expectedRawVersion: '1.2.4'
+    },
+    {
+      strategy: 'minor',
+      input: 'v1.2.3',
+      versionPrefix: '',
+      additionalName: '',
+      expectedNewVersion: '1.3.0',
+      expectedRawVersion: '1.3.0'
+    },
+    {
+      strategy: 'major',
+      input: 'v1.2.3',
+      versionPrefix: 'v',
+      additionalName: '',
+      expectedNewVersion: 'v2.0.0',
+      expectedRawVersion: '2.0.0'
+    },
+    {
+      strategy: 'patch',
+      input: 'server.v1.2.3',
+      versionPrefix: 'v',
+      additionalName: 'server.',
+      expectedNewVersion: 'server.v1.2.4',
+      expectedRawVersion: '1.2.4'
+    },
+    {
+      strategy: 'patch',
+      input: 'client.v1.2.3',
+      versionPrefix: 'v',
+      additionalName: 'client.',
+      expectedNewVersion: 'client.v1.2.4',
+      expectedRawVersion: '1.2.4'
+    },
+    {
+      strategy: 'minor',
+      input: 'server.v1.2.3',
+      versionPrefix: 'v',
+      additionalName: 'server.',
+      expectedNewVersion: 'server.v1.3.0',
+      expectedRawVersion: '1.3.0'
+    },
+    {
+      strategy: 'minor',
+      input: 'client-package.v1.2.3',
+      versionPrefix: 'v',
+      additionalName: 'client-package.',
+      expectedNewVersion: 'client-package.v1.3.0',
+      expectedRawVersion: '1.3.0'
+    },
+    {
+      strategy: 'major',
+      input: 'server.v1.2.3',
+      versionPrefix: 'v',
+      additionalName: 'server.',
+      expectedNewVersion: 'server.v2.0.0',
+      expectedRawVersion: '2.0.0'
+    },
+    {
+      strategy: 'major',
+      input: 'client-package.v1.2.3',
+      versionPrefix: 'v',
+      additionalName: 'client-package.',
+      expectedNewVersion: 'client-package.v2.0.0',
+      expectedRawVersion: '2.0.0'
+    }
   ];
 
-  testCases.forEach(({strategy, input, versionPrefix, expected}) => {
+  testCases.forEach(({strategy, input, versionPrefix, additionalName, expectedNewVersion, expectedRawVersion}) => {
     it(`should increment ${strategy} version for ${input}`, () => {
-      const result = incrementMainVersion(input, strategy, versionPrefix);
-      expect(result.newVersion).toBe(expected);
+      const result = incrementMainVersion(input, strategy, versionPrefix, additionalName);
+      expect(result.newVersion).toBe(expectedNewVersion);
+      expect(result.newVersionRaw).toBe(expectedRawVersion);
     });
   });
 
   it('should throw error for unknown strategy', () => {
-    expect(() => incrementMainVersion('1.2.3', 'invalid', '')).toThrow();
+    expect(() => incrementMainVersion('1.2.3', 'invalid', '', '')).toThrow();
   });
 });
 
 describe('incrementBranchVersion', () => {
   it('should create first branch version when no previous exists', () => {
-    const result = incrementBranchVersion('1.2.3', '', 'feature/new', 'v');
+    const result = incrementBranchVersion('1.2.3', '', 'feature/new', 'v', '');
     expect(result.newVersion).toBe('v1.2.3-feature-new.1');
   });
 
   it('should increment existing branch version', () => {
-    const result = incrementBranchVersion('1.2.3', 'v1.2.3-feature-new.5', 'feature/new', 'v');
+    const result = incrementBranchVersion('1.2.3', 'v1.2.3-feature-new.5', 'feature/new', 'v', '');
     expect(result.newVersion).toBe('v1.2.3-feature-new.6');
   });
 
   it('should handle invalid branch version', () => {
-    const result = incrementBranchVersion('1.2.3', 'invalid', 'feature/new', 'v');
+    const result = incrementBranchVersion('1.2.3', 'invalid', 'feature/new', 'v', '');
     expect(result.newVersion).toBe('v1.2.3-feature-new.1');
   });
 });
@@ -120,7 +231,9 @@ describe('updateVersion', () => {
       latestBranchVersion: '',
       branchName: 'main',
       strategy: 'minor',
-      versionPrefix: 'v'
+      versionPrefix: 'v',
+      additionalName: '',
+      mainlineVersioningBranches: 'main,master'
     };
     const result = updateVersion(inputs);
     expect(result.newVersion).toBe('v1.3.0');
@@ -132,7 +245,9 @@ describe('updateVersion', () => {
       latestBranchVersion: 'v1.2.3-feature-test.5',
       branchName: 'feature-test',
       strategy: 'patch',
-      versionPrefix: 'v'
+      versionPrefix: 'v',
+      additionalName: '',
+      mainlineVersioningBranches: ''
     };
     const result = updateVersion(inputs);
     expect(result.newVersion).toBe('v1.2.3-feature-test.6');
@@ -144,7 +259,9 @@ describe('updateVersion', () => {
       latestBranchVersion: '',
       branchName: 'master',
       strategy: 'major',
-      versionPrefix: ''
+      versionPrefix: '',
+      additionalName: '',
+      mainlineVersioningBranches: 'main,master'
     };
     const result = updateVersion(inputs);
     expect(result.newVersion).toBe('2.0.0');
