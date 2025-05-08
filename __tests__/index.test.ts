@@ -298,4 +298,24 @@ describe('updateVersion', () => {
     const result = updateVersion(inputs);
     expect(result.newVersion).toBe('2.0.0');
   });
+
+  it('should update main version for main branch', () => {
+    const inputs: Inputs = {
+      latestMainVersion: 'server.v1.2.3',
+      latestBranchVersion: '',
+      branchName: 'main',
+      strategy: 'minor',
+      versionPrefix: 'v',
+      additionalName: 'server.',
+      mainlineVersioningBranches: 'main,master'
+    };
+    const result = updateVersion(inputs);
+    expect(result.newVersion).toBe('server.v1.3.0');
+    expect(result.newVersionRaw).toBe('1.3.0');
+    expect(result.prefix).toBe('v');
+    expect(result.isNonMainVersion).toBe(false);
+    expect(result.major).toBe('server.v1');
+    expect(result.minor).toBe('server.v1.3');
+    expect(result.patch).toBe('server.v1.3.0');
+  });
 });
